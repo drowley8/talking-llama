@@ -2,21 +2,27 @@
 and playing back the responses. The driver code is interactive'''
 
 import threading  # allow some processes to run asynchonously
+import configparser
 from piper import PiperVoice  # TTS engine
 import pygame  # multi-platform audio output
 import ollama  # ollama API and related
 
-OLLAMA_SERVER = "localhost"
-OLLAMA_PORT = 11434
+config = configparser.ConfigParser()
+config.read("config.ini")
 
-OLLAMA_MODEL = "dolphin-mistral"
+OLLAMA_SERVER = config.get('Ollama', 'ollama-server')
+OLLAMA_PORT = config.get('Ollama', 'ollama-port')
 
-SAMPLE_RATE = 20000
-CHANNELS = 1
+OLLAMA_MODEL = config.get('Ollama', 'ollama-model')
 
-PIPER_MODEL = "en_US-libritts_r-medium.onnx"
+MAX_MESSAGES = 5
+
+SAMPLE_RATE = config.get('Audio', 'sample-rate')
+CHANNELS = config.get('Audio', 'audio-channels')
+
+PIPER_MODEL = config.get('Piper', 'piper-model')
 PIPER_MODEL_JSON = PIPER_MODEL + ".json"
-PIPER_VOICE = 0
+PIPER_VOICE = config.get('Piper', 'piper-voice')
 
 client = ollama.Client(f"http://{OLLAMA_SERVER}:{OLLAMA_PORT}/")
 
@@ -79,11 +85,9 @@ def construct_message(role, text):
     return message
 
 
-def main():
+def interactive_session():
     """driver code. also main loop"""
     global running
-    thread = threading.Thread(target=play_sound_queue)
-    thread.start()
 
     messages = []
 
@@ -108,9 +112,31 @@ def main():
         print("\nquiting...")
         running = False
 
+def automatic_session():
+    global running
+
+    # each agent has their own history so they think the other is user
+    messages_agent_a = []
+    messages_agent_b = []
+
+    try:
+        while running:
+            pass
+
+    except (KeyboardInterrupt, EOFError):
+        print("\nquiting...")
+        running = False
+
+
+def main():
+    audio_thread = threading.Thread(target=play_sound_queue)
+    audio_thread.start()
+
+    interactive_session()
+
     while pygame.mixer.get_busy():
         pass  # to allow piper to finish speaking before quitting
-    thread.join()
+    audio_thread.join()
 
 
 if __name__ == "__main__":
