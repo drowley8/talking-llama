@@ -60,9 +60,9 @@ def play_sound_queue():
 
 
 def process_lines(stream):
-    """takes an ollama stream as imput, prints new tokens to the screen, and
+    '''takes an ollama stream as imput, prints new tokens to the screen, and
     attempts to reform the tokens into complete sentences. returns complete
-    sentences"""
+    sentences'''
     buffer = []
     for chunk in stream:
         word: str = chunk["message"]["content"]
@@ -77,8 +77,8 @@ def process_lines(stream):
 
 
 def construct_message(role, text):
-    """contstructs a message, which is the form of data that ollama expects to
-    receive"""
+    '''contstructs a message, which is the form of data that ollama expects to
+    receive'''
     if not text:
         return []
     message = [{"role": role, "content": text}]
@@ -86,7 +86,7 @@ def construct_message(role, text):
 
 
 def interactive_session():
-    """driver code. also main loop"""
+    '''basic session between the user and a single model'''
     global running
 
     messages = []
@@ -112,7 +112,33 @@ def interactive_session():
         print("\nquiting...")
         running = False
 
+
+def loner_session():
+    '''session with one model where the user does not exist'''
+    global running
+
+    messages = []
+
+    try:
+        while running:
+            stream = client.chat(model=OLLAMA_MODEL,
+                                 stream=True,
+                                 messages=messages)
+            machine_response_text = []
+            for line in process_lines(stream):
+                sentence_queue.append(line)
+                machine_response_text.append(line)
+            assistant_message = construct_message(
+                "assistant", "".join(machine_response_text)
+            )
+            messages += assistant_message
+    except (KeyboardInterrupt, EOFError):
+        print("\nquiting...")
+        running = False
+
 def automatic_session():
+    '''session held entirely between two model agents thinking the other is the
+    user'''
     global running
 
     # each agent has their own history so they think the other is user
@@ -160,7 +186,8 @@ def main():
     audio_thread = threading.Thread(target=play_sound_queue)
     audio_thread.start()
 
-    interactive_session()
+    # interactive_session()
+    automatic_session()
 
     while pygame.mixer.get_busy():
         pass  # to allow piper to finish speaking before quitting
