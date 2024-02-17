@@ -17,12 +17,12 @@ OLLAMA_MODEL = config.get('Ollama', 'ollama-model')
 
 MAX_MESSAGES = 5
 
-SAMPLE_RATE = config.get('Audio', 'sample-rate')
-CHANNELS = config.get('Audio', 'audio-channels')
+SAMPLE_RATE = int(config.get('Audio', 'sample-rate'))
+CHANNELS = int(config.get('Audio', 'audio-channels'))
 
 PIPER_MODEL = config.get('Piper', 'piper-model')
 PIPER_MODEL_JSON = PIPER_MODEL + ".json"
-PIPER_VOICE = config.get('Piper', 'piper-voice')
+PIPER_VOICE = int(config.get('Piper', 'piper-voice'))
 
 client = ollama.Client(f"http://{OLLAMA_SERVER}:{OLLAMA_PORT}/")
 
@@ -121,7 +121,35 @@ def automatic_session():
 
     try:
         while running:
-            pass
+            print("\nAgent A:\n")
+            stream = client.chat(model=OLLAMA_MODEL,
+                                 stream=True,
+                                 messages=messages_agent_a)
+            agent_response_text = []
+            for line in process_lines(stream):
+                sentence_queue.append(line)
+                agent_response_text.append(line)
+            messages_agent_a += construct_message(
+                "assistant", "".join(agent_response_text)
+            )
+            messages_agent_b += construct_message(
+                "user", "".join(agent_response_text)
+            )
+
+            print("\nAgent B:\n")
+            stream = client.chat(model=OLLAMA_MODEL,
+                                 stream=True,
+                                 messages=messages_agent_b)
+            agent_response_text = []
+            for line in process_lines(stream):
+                sentence_queue.append(line)
+                agent_response_text.append(line)
+            messages_agent_b += construct_message(
+                "assistant", "".join(agent_response_text)
+            )
+            messages_agent_a += construct_message(
+                "user", "".join(agent_response_text)
+            )
 
     except (KeyboardInterrupt, EOFError):
         print("\nquiting...")
