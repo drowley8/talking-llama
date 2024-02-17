@@ -42,8 +42,8 @@ This project uses multi-threading in order to allow Piper and Pygame to speak co
 Ollama expects to receive a list of message objects, each message having this format:
 ```json
 {
-    'role' : <role>,
-    'content' : <message-text>
+    "role" : role,
+    "content" : message-text
 }
 ```
 `role` can only be one of `'assistant'`, `'user'`, or `'system'`.
